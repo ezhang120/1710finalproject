@@ -2,18 +2,17 @@
 
 // Player
 abstract sig Player {}
-sig P1, P2 extends Player {}
+one sig P1, P2 extends Player {}
+// sig Piece {
+//     owner: Player
+// }
 
 // Board
 sig State {
-    inner_square: pfunc Int -> Player
-    middle_square: pfunc Int -> Player
-    outer_square: pfunc Int -> Player
-    turn: Player // Denotes person who is going to move
-    // mills: set set Int
+    board: pfunc Int -> Int -> Player // first int is the square we are on. 2 = outer, 1 = middle, 0 = inner
+    turn: one Player // Denotes person who is going to move
+    // mills: set set Int -> Int // a set of set of integer pairs, where pairs specify the slot. inner sets of size 3.
 }
-
-// two representations convert between all single numbered
 
 // Trace of Game
 sig Trace {
@@ -23,15 +22,13 @@ sig Trace {
 
 pred wellformed {
     // each square has slots 0 to 7
-    all s: State | all i: Int | {
-        s.inner_square[i] => i >= 0 and i <= 7
-        s.middle_square[i] => i >= 0 and i <= 7
-        s.outer_square[i] => i >= 0 and i <= 7
+    all s: State | all square: Int | all i: Int {
+        s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 2)
     }
 }
 
 fun countPiecesPlayer[s: State, p: Player]: Int {
-    add[add[#{i: Int | s.inner_square[i] == p}, #{i: Int | s.middle_square[i] == p}], #{i: Int | s.outer_square[i] == p}]
+    add[add[#{i: Int | s.board[0][i] == p}, #{i: Int | s.board[1][i] == p}], #{i: Int | s.board[2][i] == p}]
 }
 
 pred starting[s: State] {
@@ -49,36 +46,57 @@ pred P2Turn[s: State] {
     s.turn == P2
 }
 
-pred move[pre: State, move???, p: Player???, post: State] {
+pred move[pre: State, p: Player, post: State] {
     // Guard
     not gameOver[pre]
-
+    p = P1 implies P1Turn[pre]
+    p = P2 implies P2Turn[pre]
 
     // Action
-    pre.turn != post.turn
+    pre.turn != post.turn -- change turn to next player
+
     // TODO only a single piece of player moves
     // rest stays the same
+    // figure out if the piece is odd or even
+    // if it is inner square odd piece cannot move inward
+    // if it is outer square the odd pieces cannot move outward
+    // the pieces 
+
+    some square, i: Int | {
+        pre.board[square][i] = p
+        no post.board[square][i]
+        some square1, i1 | {
+            no pre.board[square1][i1]
+            some post.board[square1][i1]
+            square1
+            i1 = remainder[add(i+1), 8] or remainder[add(i-1), 8]
+        }
+    no pre.board[square][i]
+
+        post. = p
+    }
 }
 
-// different types of moves? or allowed moves. maybe a flying more and moving move
+// get move and check if piece there or not
+// checked if open or not
 
-pred loser[s: State, p: Player] {
-     countPiecesPlayer[s, p] == 2
-}
+// // different types of moves? or allowed moves. maybe a flying more and moving move
 
-pred gameOver[s: State] {
-    some p: Player | loser[s, p]
-    // TODO or no legal moves
-}
+// pred loser[s: State, p: Player] {
+//      countPiecesPlayer[s, p] == 2
+// }
+
+// pred gameOver[s: State] {
+//     some p: Player | loser[s, p]
+//     // TODO or no legal moves
+// }
 
 pred doNothing[pre: State, post: State] {
     // Guard
     gameOver[pre]
 
     // Action
-    pre.inner_square == post.inner_square
-    pre.middle_square == post.middle_square
-    pre.outer_square == post.outer_square
+    pre.board = post.board
     pre.turn = post.turn
 }
 
@@ -90,7 +108,7 @@ pred traces {
     --"next” enforces move predicate (valid transitions!)
     all s: State | {
         some Trace.next[s] implies {
-            (some num: Int, p: Player | move[s, ???, ???, Trace.next[s]])
+            (some p: Player | move[s, p, Trace.next[s]])
             or
             (doNothing[s, Trace.next[s]])
         }
@@ -98,3 +116,7 @@ pred traces {
     }
 }
 
+
+// TODO LIST (cause I like lists)
+// write move
+// write game over
