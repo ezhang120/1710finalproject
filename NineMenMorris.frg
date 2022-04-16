@@ -82,7 +82,7 @@ pred move[pre: State, p: Player, post: State] {
                 or 
                 // if square doesn't move, then i can move
                 // i must (i+1)%8 or (i-1)%8 and square won't change
-                {i1 = (remainder[add[i, 1], 8] or remainder[subtract[i, 1], 8]) and square = square1}
+                {(i1 = remainder[add[i, 1], 8] or i1 = remainder[subtract[i, 1], 8]) and square = square1}
             }
             // frame condition
             // all other squares should remain the same from pre to post
