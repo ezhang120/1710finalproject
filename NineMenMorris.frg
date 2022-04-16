@@ -66,10 +66,15 @@ pred move[pre: State, p: Player, post: State] {
         pre.board[square][i] = p
         no post.board[square][i]
         some square1, i1 | {
+            // TODO: square1 is in bounds
             no pre.board[square1][i1]
             some post.board[square1][i1]
-            square1
-            i1 = remainder[add(i+1), 8] or remainder[add(i-1), 8]
+            // i is odd means that 
+            {(square1 = add[square, 1] or square1 = subtract[square, 1]) and i = i1} implies remainder[i, 2] = 1
+            or i1 = (remainder[add[i, 1], 8] or remainder[subtract[i, 1], 8]) and square = square1
+            // i changes or square changes only
+            // square changes only if i is odd
+
         }
     no pre.board[square][i]
 
