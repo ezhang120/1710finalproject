@@ -20,6 +20,7 @@ sig State {
     board: pfunc Int -> Int -> Player, // first int is the square we are on. 2 = outer, 1 = middle, 0 = inner
     turn: one Player, // Denotes person who is going to move
     mills: set Mills // a set of set of integer pairs, where pairs specify the slot. inner sets of size 3.
+    validMills: set Mills // set of valid mills we can check against
 }
 
 // Trace of Game
@@ -41,36 +42,10 @@ fun countPiecesPlayer[s: State, p: Player]: Int {
 }
 
 pred starting[s: State] {
-    // existing mills on the board
-    all m: s.mills | some square: {i: Int | i >= 0 and i <= 2} | {
-        {s.board[square][m.slot1[square]] = m.player} 
-        and {s.board[square][m.slot2[square]] = m.player} 
-        and {s.board[square][m.slot3[square]] = m.player}
-    }
-    // all mills must be valid
-    all m: s.mills | validMillDiffSquare[m] or validMillSameSquare[m]
     // 1 player has 3 tokens on the board, the other player has 4 to 9 tokens on the board.
     (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 9))
     or
     (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 9))
-}
-
-// any mill must be a valid mill (same square)
-pred validMillDiffSquare[m: Mills] {
-    {m.slot1 = 0 -> 1 and m.slot2 = 1 -> 1 and m.slot1 = 2 -> 1} or
-    {m.slot1 = 0 -> 3 and m.slot2 = 1 -> 3 and m.slot1 = 2 -> 3} or
-    {m.slot1 = 0 -> 5 and m.slot2 = 1 -> 5 and m.slot1 = 2 -> 5} or
-    {m.slot1 = 0 -> 7 and m.slot2 = 1 -> 7 and m.slot1 = 2 -> 7} 
-}
-
-// any mill must be a valid mill (same square)
-pred validMillSameSquare[m: Mills] {
-    all square: {0, 1, 2} | all {
-        {m.slot1 = square -> 0 and m.slot2 = square -> 1 and m.slot1 = square -> 2} or
-        {m.slot1 = square -> 2 and m.slot2 = square -> 3 and m.slot1 = square -> 4} or
-        {m.slot1 = square -> 4 and m.slot2 = square -> 5 and m.slot1 = square -> 6} or
-        {m.slot1 = square -> 6 and m.slot2 = square -> 7 and m.slot1 = square -> 0}
-    }
 }
 
 pred P1Turn[s: State] {
@@ -119,12 +94,8 @@ pred move[pre: State, p: Player, post: State] {
                 // i must (i+1)%8 or (i-1)%8 and square won't change
                 {(i1 = remainder[add[i, 1], 8] or i1 = remainder[subtract[i, 1], 8]) and square = square1}
             }
-            //call find mills 
-            findMills[pre, post, player]
             // frame condition
             // all other squares should remain the same from pre to post
-            // (only if no new mills)
-            {post.mills = pre.mills} implies
             all square2, i2: Int | {
                 (square2 != square and square2 != square1 and i2 != i and i2 != i1)
                 implies pre.board[square2][i2] = post.board[square2][i2]
@@ -164,12 +135,8 @@ pred flyingMove[pre: State, p: Player, post: State] {
             no pre.board[square1][i1]
             // there is something at this place after this turn
             post.board[square1][i1] = p
-             //call find mills 
-            findMills[pre, post, player]
             // frame condition
             // all other squares should remain the same from pre to post
-            // (only if no new mills)
-            {post.mills = pre.mills} implies
             all square2, i2: Int | {
                 (square2 != square and square2 != square1 and i2 != i and i2 != i1)
                 implies pre.board[square2][i2] = post.board[square2][i2]
@@ -179,54 +146,53 @@ pred flyingMove[pre: State, p: Player, post: State] {
 
 }
 
-// find mill across same square
-pred findMillSameSquare[pre: State, post: State, p: Player] {
-    all square: {0, 1, 2} | one m : Mills | {
-        {{pre.board[square][0] = p and pre.board[square][1] = p and pre.board[square][2] = p} 
-        iff {m.slot1 = square->0 and m.slot2 = square->1 and m.slot3 = square->2 and m.player = p and post.mills = pre.mills + m}} or
-        {{pre.board[square][2] = p and pre.board[square][3] = p and pre.board[square][4] = p} 
-        iff {m.slot1 = square->2 and m.slot2 = square->3 and m.slot3 = square->4 and m.player = p and post.mills = pre.mills + m}} or
-        {{pre.board[square][4] = p and pre.board[square][5] = p and pre.board[square][6] = p} 
-        iff {m.slot1 = square->4 and m.slot2 = square->5 and m.slot3 = square->6 and m.player = p and post.mills = pre.mills + m}} or
-        {{pre.board[square][6] = p and pre.board[square][7] = p and pre.board[square][0] = p} 
-        iff {m.slot1 = square->6 and m.slot2 = square->7 and m.slot3 = square->0 and m.player = p and post.mills = pre.mills + m}}
+pred findMillSameSquare[s: State, p: Player] {
+    all square: {0, 1, 2} | {
+        {s.board[square][0] = p and s.board[square][1] = p and s.board[square][2] = p} or
+        {s.board[square][2] = p and s.board[square][3] = p and s.board[square][4] = p} or
+        {s.board[square][4] = p and s.board[square][5] = p and s.board[square][6] = p} or
+        {s.board[square][6] = p and s.board[square][7] = p and s.board[square][0] = p}
     }
-
     // add to set of mills
 }
 
-// find mill across different squares
-pred findMillDiffSquare[pre: State, post: State, p: Player] {
-    {pre.board[0][1] = p and pre.board[1][1] = p and pre.board[2][1] = p} iff {m.slot1 = 0->1 and m.slot2 = 1->1 and m.slot3 = 2->1 and m.player = p and post.mills = pre.mills + m} or
-    {pre.board[0][3] = p and pre.board[1][3] = p and pre.board[2][3] = p} iff {m.slot1 = 0->3 and m.slot2 = 1->3 and m.slot3 = 2->3 and m.player = p and post.mills = pre.mills + m} or
-    {pre.board[0][5] = p and pre.board[1][5] = p and pre.board[2][5] = p} iff {m.slot1 = 0->5 and m.slot2 = 1->5 and m.slot3 = 2->5 and m.player = p and post.mills = pre.mills + m} or
-    {pre.board[0][7] = p and pre.board[1][7] = p and pre.board[2][7] = p} iff {m.slot1 = 0->7 and m.slot2 = 1->7 and m.slot3 = 2->7 and m.player = p and post.mills = pre.mills + m}
-    // add to set of mills
-}
-
-// TODO: call finding mill
-// find mills after a move
-pred findMills[pre: State, post:State, p: Player] {
-    findMillSameSquare[pre, post, p] or findMillDiffSquare[pre, post, p]
-    {pre.mills != post.mills and p = P1} implies removePieces[pre, post, P2]
-    {pre.mills != post.mills and p = P2} implies removePieces[pre, post, P1]
-    // remove a mill if from the set if move breaks a mill apart
-    all m:Mills | all squares: {0, 1, 2} | {{
-            no post.board[square][m.slot1[square]] or
-            no post.board[square][m.slot2[square]] or
-            no post.board[square][m.slot3[square]]
-        } implies {post.mills = pre.mills - m}
+pred findMillSameSquare[s: State, p: Player] {
+    all square: {0, 1, 2} | all {
+        {s.board[square][0] = p and s.board[square][1] = p and s.board[square][2] = p} or
+        {s.board[square][2] = p and s.board[square][3] = p and s.board[square][4] = p} or
+        {s.board[square][4] = p and s.board[square][5] = p and s.board[square][6] = p} or
+        {s.board[square][6] = p and s.board[square][7] = p and s.board[square][0] = p}
     } 
+    // add to set of mills
 }
 
-// remove a piece of the opponent player
-pred removePieces[pre: State, post: State,  p: Player] {
-    some square, i: Int | all square1, i1: Int | {
-        // all other slots remain the same
-        {square1 != square and i1 != i implies pre.board[square1][i1] = post.board[square1][i1]} and 
-        // single opponent player piece is removed 
-        {pre.board[square][i] = p iff no post.board[square][i]}
-    }
+// pred findMillDiffSquare[s: State, p: Player] {
+//     {s.board[0][1] = p and s.board[1][1] = p and s.board[2][1] = p} or
+//     {s.board[0][3] = p and s.board[1][3] = p and s.board[2][3] = p} or
+//     {s.board[0][5] = p and s.board[1][5] = p and s.board[2][5] = p} or
+//     {s.board[0][7] = p and s.board[1][7] = p and s.board[2][7] = p}
+//     // add to set of mills
+// }
+// in starting
+// existing mills on the board
+all m: Mills | some square: {0, 1, 2} | m in s.mills iff {s.board[square][m.slot1[square]] = m.player} and {s.board[square][m.slot2[square]] = m.player} and {s.board[square][m.slot3[square]] = m.player} 
+
+pred validMillDiffSquare[m: Mills] {
+    {m.slot1 = 0 -> 1 and m.slot2 = 1 -> 1 and m.slot1 = 2 -> 1} or
+    {m.slot1 = 0 -> 3 and m.slot2 = 1 -> 3 and m.slot1 = 2 -> 3} or
+    {m.slot1 = 0 -> 5 and m.slot2 = 1 -> 5 and m.slot1 = 2 -> 5} or
+    {m.slot1 = 0 -> 7 and m.slot2 = 1 -> 7 and m.slot1 = 2 -> 7}
+    all square: {0, 1, 2} | all {
+        {m.slot1 = square -> 0 and m.slot2 = square -> 1 and m.slot1 = square -> 2} or
+        {m.slot1 = square -> 2 and m.slot2 = square -> 3 and m.slot1 = square -> 4} or
+        {m.slot1 = square -> 4 and m.slot2 = square -> 5 and m.slot1 = square -> 6} or
+        {m.slot1 = square -> 6 and m.slot2 = square -> 7 and m.slot1 = square -> 0}
+    } 
+    // add to set of mills
+}
+
+pred findMills[s: State, p: Player] {
+    findMillSameSquare[s, p] or findMillDiffSquare[s, p] 
 }
 
 // get move and check if piece there or not
@@ -281,4 +247,3 @@ run {
     //when you create a mill, them you are given the option to remove an opponents piece
 // ensure that when the opppent player is removing a piece that the piece that they are removing is not in a mill
     //unless that is the only option left i.e no pieces outside the mill
-
