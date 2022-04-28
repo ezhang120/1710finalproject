@@ -17,9 +17,9 @@ one sig Trace {
 }
 
 pred wellformed {
-    // each square has slots 0 to 7
+    // each square has slots 0 to 4
     all s: State | all square: Int | all i: Int {
-        some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 2)
+        some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 1)
     }
 }
 
@@ -29,9 +29,9 @@ fun countPiecesPlayer[s: State, p: Player]: Int {
 
 pred starting[s: State] {
     // 1 player has 3 tokens on the board, the other player has 4 to 9 tokens on the board.
-    (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 9))
+    (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 6))
     or
-    (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 9))
+    (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 6))
 }
 
 pred P1Turn[s: State] {
@@ -44,12 +44,6 @@ pred P2Turn[s: State] {
 
 pred millPostNotPre[pre: State, p: Player, post: State] {
     // if mill in post that is not in pre
-
-    // outer square
-    {{post.board[0][0] = p and post.board[0][1] = p and post.board[0][2] = p} and {pre.board[0][0] != p or pre.board[0][1] != p or pre.board[0][2] != p}} or
-    {{post.board[0][2] = p and post.board[0][3] = p and post.board[0][4] = p} and {pre.board[0][2] != p or pre.board[0][3] != p or pre.board[0][4] != p}} or
-    {{post.board[0][4] = p and post.board[0][5] = p and post.board[0][6] = p} and {pre.board[0][4] != p or pre.board[0][5] != p or pre.board[0][6] != p}} or
-    {{post.board[0][6] = p and post.board[0][7] = p and post.board[0][0] = p} and {pre.board[0][6] != p or pre.board[0][7] != p or pre.board[0][0] != p}} or
 
     // middle square
     {{post.board[1][0] = p and post.board[1][1] = p and post.board[1][2] = p} and {pre.board[1][0] != p or pre.board[1][1] != p or pre.board[1][2] != p}} or
@@ -83,7 +77,7 @@ pred slide[pre: State, p: Player, post: State] {
         // Constrain square and i
         pre.board[square][i] = p
 
-        // TODO: not sure if this is correct
+        // remove as moving
         no post.board[square][i]
 
         some square1, i1: Int | {
@@ -91,7 +85,7 @@ pred slide[pre: State, p: Player, post: State] {
             ((square != square1) or (i != i1)) and ((square = square1) or (i = i1))
 
             // square1 is in bounds
-            square1 <= 2 and square1 >= 0
+            square1 <= 1 and square1 >= 0
 
             // i1 is in bounds
             i1 <= 7 and i1 >= 0
@@ -136,7 +130,7 @@ pred slide[pre: State, p: Player, post: State] {
 }
 
 pred flyingMove[pre: State, p: Player, post: State] {
-      // Guard
+    // Guard
     not gameOver[pre]
     p = P1 implies P1Turn[pre]
     p = P2 implies P2Turn[pre]
@@ -151,7 +145,7 @@ pred flyingMove[pre: State, p: Player, post: State] {
         // Constrain square and i
         pre.board[square][i] = p
 
-        // TODO: not sure if this is correct
+        // remove as moving
         no post.board[square][i]
 
         some square1, i1: Int | {
@@ -159,7 +153,7 @@ pred flyingMove[pre: State, p: Player, post: State] {
             (square != square1) or (i != i1)
 
             // square1 is in bounds
-            square1 <= 2 and square1 >= 0
+            square1 <= 1 and square1 >= 0
 
             // i1 is in bounds
             i1 <= 7 and i1 >= 0
@@ -243,13 +237,43 @@ pred tracesWithFlying {
         
     }
 }
-option verbose 2
+
+option verbose 5
+
+inst opt2 {
+    Trace = `Trace0
+    State = `State0 + `State1
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1
+}
+
 run {
     wellformed
     tracesWithoutFlying
-} for exactly 4 Int, exactly 1 State // 5 Int I think because we use an 8?
+} for exactly 5 Int, exactly 2 State for opt2
 
-// remove in the same state as making the mill, makes the finding of new mills soooooooo much easier.
+// inst opt4 {
+//     Trace = `Trace0
+//     State = `State0 + `State1 + `State2 + `State3
+//     P1 = `P10
+//     P2 = `P20
+//     Player = P1 + P2
+//     board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+//     initial_state = `Trace0->`State0
+//     next = `Trace0->`State0->`State1 +
+//            `Trace0->`State1->`State2 + 
+//            `Trace0->`State2->`State3 
+// }
+
+// run {
+//     wellformed
+//     tracesWithoutFlying
+// } for exactly 5 Int, exactly 4 State for opt4
+
 // ensure that when the opppent player is removing a piece that the piece that they are removing is not in a mill // are we implementing this?
     //unless that is the only option left i.e no pieces outside the mill
 
