@@ -4,14 +4,6 @@
 abstract sig Player {}
 one sig P1, P2 extends Player {}
 
-// mills
-sig Mills {
-    slot1: pfunc Int -> Int,
-    slot2: pfunc Int -> Int,
-    slot3: pfunc Int -> Int,
-    player: one Player
-}
-
 // Board
 sig State {
     board: pfunc Int -> Int -> Player, // first int is the square we are on. 2 = outer, 1 = middle, 0 = inner
@@ -25,10 +17,9 @@ one sig Trace {
 }
 
 pred wellformed {
-    all m: Mills | some m.slot1 and some m.slot2 and some m.slot3
-    // each square has slots 0 to 7
+    // each square has slots 0 to 4
     all s: State | all square: Int | all i: Int {
-        some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 2)
+        some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 1)
     }
 }
 
@@ -37,36 +28,10 @@ fun countPiecesPlayer[s: State, p: Player]: Int {
 }
 
 pred starting[s: State] {
-    // existing mills on the board
-    all m: s.mills | some square: {i: Int | i >= 0 and i <= 2} | {
-        {s.board[square][m.slot1[square]] = m.player} 
-        and {s.board[square][m.slot2[square]] = m.player} 
-        and {s.board[square][m.slot3[square]] = m.player}
-    }
-    // all mills must be valid
-    all m: s.mills | validMillDiffSquare[m] or validMillSameSquare[m]
     // 1 player has 3 tokens on the board, the other player has 4 to 9 tokens on the board.
-    (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 9))
+    (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 6))
     or
-    (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 9))
-}
-
-// any mill must be a valid mill (same square)
-pred validMillDiffSquare[m: Mills] {
-    {m.slot1 = 0 -> 1 and m.slot2 = 1 -> 1 and m.slot1 = 2 -> 1} or
-    {m.slot1 = 0 -> 3 and m.slot2 = 1 -> 3 and m.slot1 = 2 -> 3} or
-    {m.slot1 = 0 -> 5 and m.slot2 = 1 -> 5 and m.slot1 = 2 -> 5} or
-    {m.slot1 = 0 -> 7 and m.slot2 = 1 -> 7 and m.slot1 = 2 -> 7} 
-}
-
-// any mill must be a valid mill (same square)
-pred validMillSameSquare[m: Mills] {
-    all square: {0, 1, 2} | all {
-        {m.slot1 = square -> 0 and m.slot2 = square -> 1 and m.slot1 = square -> 2} or
-        {m.slot1 = square -> 2 and m.slot2 = square -> 3 and m.slot1 = square -> 4} or
-        {m.slot1 = square -> 4 and m.slot2 = square -> 5 and m.slot1 = square -> 6} or
-        {m.slot1 = square -> 6 and m.slot2 = square -> 7 and m.slot1 = square -> 0}
-    }
+    (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 6))
 }
 
 pred P1Turn[s: State] {
@@ -79,12 +44,6 @@ pred P2Turn[s: State] {
 
 pred millPostNotPre[pre: State, p: Player, post: State] {
     // if mill in post that is not in pre
-
-    // outer square
-    {{post.board[0][0] = p and post.board[0][1] = p and post.board[0][2] = p} and {pre.board[0][0] != p or pre.board[0][1] != p or pre.board[0][2] != p}} or
-    {{post.board[0][2] = p and post.board[0][3] = p and post.board[0][4] = p} and {pre.board[0][2] != p or pre.board[0][3] != p or pre.board[0][4] != p}} or
-    {{post.board[0][4] = p and post.board[0][5] = p and post.board[0][6] = p} and {pre.board[0][4] != p or pre.board[0][5] != p or pre.board[0][6] != p}} or
-    {{post.board[0][6] = p and post.board[0][7] = p and post.board[0][0] = p} and {pre.board[0][6] != p or pre.board[0][7] != p or pre.board[0][0] != p}} or
 
     // middle square
     {{post.board[1][0] = p and post.board[1][1] = p and post.board[1][2] = p} and {pre.board[1][0] != p or pre.board[1][1] != p or pre.board[1][2] != p}} or
@@ -126,7 +85,7 @@ pred slide[pre: State, p: Player, post: State] {
             ((square != square1) or (i != i1)) and ((square = square1) or (i = i1))
 
             // square1 is in bounds
-            square1 <= 2 and square1 >= 0
+            square1 <= 1 and square1 >= 0
 
             // i1 is in bounds
             i1 <= 7 and i1 >= 0
@@ -171,7 +130,7 @@ pred slide[pre: State, p: Player, post: State] {
 }
 
 pred flyingMove[pre: State, p: Player, post: State] {
-      // Guard
+    // Guard
     not gameOver[pre]
     p = P1 implies P1Turn[pre]
     p = P2 implies P2Turn[pre]
@@ -186,7 +145,7 @@ pred flyingMove[pre: State, p: Player, post: State] {
         // Constrain square and i
         pre.board[square][i] = p
 
-        // TODO: not sure if this is correct
+        // remove as moving
         no post.board[square][i]
 
         some square1, i1: Int | {
@@ -194,7 +153,7 @@ pred flyingMove[pre: State, p: Player, post: State] {
             (square != square1) or (i != i1)
 
             // square1 is in bounds
-            square1 <= 2 and square1 >= 0
+            square1 <= 1 and square1 >= 0
 
             // i1 is in bounds
             i1 <= 7 and i1 >= 0
@@ -278,13 +237,43 @@ pred tracesWithFlying {
         
     }
 }
-option verbose 2
+
+option verbose 5
+
+inst opt2 {
+    Trace = `Trace0
+    State = `State0 + `State1
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1
+}
+
 run {
     wellformed
     tracesWithoutFlying
-} for exactly 4 Int, exactly 1 State // 5 Int I think because we use an 8?
+} for exactly 5 Int, exactly 2 State for opt2
 
-// remove in the same state as making the mill, makes the finding of new mills soooooooo much easier.
+// inst opt4 {
+//     Trace = `Trace0
+//     State = `State0 + `State1 + `State2 + `State3
+//     P1 = `P10
+//     P2 = `P20
+//     Player = P1 + P2
+//     board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+//     initial_state = `Trace0->`State0
+//     next = `Trace0->`State0->`State1 +
+//            `Trace0->`State1->`State2 + 
+//            `Trace0->`State2->`State3 
+// }
+
+// run {
+//     wellformed
+//     tracesWithoutFlying
+// } for exactly 5 Int, exactly 4 State for opt4
+
 // ensure that when the opppent player is removing a piece that the piece that they are removing is not in a mill // are we implementing this?
     //unless that is the only option left i.e no pieces outside the mill
 
