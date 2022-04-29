@@ -246,7 +246,7 @@ inst opt2 {
     P1 = `P10
     P2 = `P20
     Player = P1 + P2
-    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    board in State -> (0 + 1)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
     initial_state = `Trace0->`State0
     next = `Trace0->`State0->`State1
 }
