@@ -154,4 +154,3 @@ for(b = 0; b < traceLength; b++) {
     printState(State.atom("State"+b), offsetEachState)  
   offsetEachState = offsetEachState + offsetEachStateAddy
 }
-Write to Murdederers
