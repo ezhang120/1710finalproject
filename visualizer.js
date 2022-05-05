@@ -1,10 +1,10 @@
 const d3 = require('d3')
 d3.selectAll("svg > *").remove();
 
-const traceLength = 4
-const offsetEachStateAddy = 105
+const traceLength = 2
+const offsetEachStateAddy = 205
 const offsetEachStateAddx = 5
-const stateSize = 100
+const stateSize = 200
 const numberSquares = 2
 const numberI = 7
 const fontSize = "7px"
@@ -14,39 +14,75 @@ const fontSize = "7px"
 // print from 25, 25, 50, 25, 75, 25 (top row of outer square)
 // inner square: 37.5, 37.5, 37.5, 50, 37.5, 62.5
 
+// function convertRowColToCoordinates(square, i, yoffset) {
+//     if (square == 0 && i == 0) {
+//         return [37.5, yoffset + 37.5]
+//     } else if (square == 0 && i == 1) {
+//         return [50, yoffset + 37.5]
+//     } else if (square == 0 && i == 2) {
+//         return [65.5, yoffset + 37.5]
+//     } else if (square == 0 && i == 3) {
+//         return [65.5, yoffset + 50]
+//     } else if (square == 0 && i == 4) {
+//         return [65.5, yoffset + 69.5]
+//     } else if (square == 0 && i == 5) {
+//         return [50, yoffset + 69.5]
+//     } else if (square == 0 && i == 6) {
+//         return [37.5, yoffset + 69.5]
+//     } else if (square == 0 && i == 7) {
+//         return [37.5, yoffset + 50]
+//     } else if (square == 1 && i == 0) {
+//         return [22, yoffset + 25]
+//     } else if (square == 1 && i == 1) {
+//         return [50, yoffset + 25]
+//     } else if (square == 1 && i == 2) {
+//         return [79, yoffset + 25]
+//     } else if (square == 1 && i == 3) {
+//         return [79, yoffset + 50]
+//     } else if (square == 1 && i == 4) {
+//         return [79, yoffset + 75]
+//     } else if (square == 1 && i == 5) {
+//         return [50, yoffset + 75]
+//     } else if (square == 1 && i == 6) {
+//         return [22, yoffset + 75]
+//     } else if (square == 1 && i == 7) {
+//         return [22, yoffset + 50]
+//     }
+// }
+
 function convertRowColToCoordinates(square, i, yoffset) {
     if (square == 0 && i == 0) {
-        return [37.5, yoffset + 37.5]
+        return [65, yoffset + 70]
     } else if (square == 0 && i == 1) {
-        return [50, yoffset + 37.5]
+        return [101, yoffset + 70]
     } else if (square == 0 && i == 2) {
-        return [65.5, yoffset + 37.5]
+        return [135, yoffset + 70]
     } else if (square == 0 && i == 3) {
-        return [65.5, yoffset + 50]
+        return [135, yoffset + 107]
     } else if (square == 0 && i == 4) {
-        return [65.5, yoffset + 69.5]
+        return [135, yoffset + 139]
     } else if (square == 0 && i == 5) {
-        return [50, yoffset + 69.5]
+        return [101, yoffset + 139]
     } else if (square == 0 && i == 6) {
-        return [37.5, yoffset + 69.5]
+        return [65, yoffset + 139]
     } else if (square == 0 && i == 7) {
-        return [37.5, yoffset + 50]
+        return [65, yoffset + 107]
     } else if (square == 1 && i == 0) {
-        return [25, yoffset + 25]
+        return [40, yoffset + 45]
     } else if (square == 1 && i == 1) {
-        return [50, yoffset + 25]
+        return [101, yoffset + 45]
     } else if (square == 1 && i == 2) {
-        return [79, yoffset + 25]
+        return [160, yoffset + 45]
     } else if (square == 1 && i == 3) {
-        return [79, yoffset + 50]
+        return [160, yoffset + 107]
     } else if (square == 1 && i == 4) {
-        return [79, yoffset + 75]
+        return [160, yoffset + 165]
     } else if (square == 1 && i == 5) {
-        return [50, yoffset + 75]
+        return [101, yoffset + 165]
     } else if (square == 1 && i == 6) {
-        return [25, yoffset + 75]
+        return [40, yoffset + 165]
     } else if (square == 1 && i == 7) {
-        return [25, yoffset + 50]
+        return [40, yoffset + 107]
     }
 }
 
@@ -100,43 +136,52 @@ function printState(stateAtom, yoffset) {
     .attr('fill', 'transparent');
   d3.select(svg)
     .append('rect')
-    .attr('x', offsetEachStateAddx+20)
-    .attr('y', yoffset+1+20)
-    .attr('width', stateSize-40)
-    .attr('height', stateSize-40)
+    .attr('x', offsetEachStateAddx+40)
+    .attr('y', yoffset+1+40)
+    .attr('width', stateSize-80)
+    .attr('height', stateSize-80)
     .attr('stroke-width', 1)
     .attr('stroke', 'black')
     .attr('fill', 'transparent');
    d3.select(svg)
     .append('rect')
-    .attr('x', offsetEachStateAddx+33)
-    .attr('y', yoffset+1+33)
-    .attr('width', stateSize-66)
-    .attr('height', stateSize-66)
+    .attr('x', offsetEachStateAddx+66)
+    .attr('y', yoffset+1+66)
+    .attr('width', stateSize-132)
+    .attr('height', stateSize-132)
     .attr('stroke-width', 1)
     .attr('stroke', 'black')
     .attr('fill', 'transparent');
+    // vertical lines
    d3.select(svg)
     .append("line")          // attach a line
     .style("stroke", "black")  // colour the line
-    .attr("x1", 55)     // x position of the first end of the line
-    .attr("y1", yoffset + 34.5)      // y position of the first end of the line
-    .attr("x2", 55)     // x position of the second end of the line
-    .attr("y2", yoffset + 20);
+    .attr("x1", 105)     // x position of the first end of the line
+    .attr("y1", yoffset + 68)      // y position of the first end of the line
+    .attr("x2", 105)     // x position of the second end of the line
+    .attr("y2", yoffset + 40);
    d3.select(svg)
     .append("line")          // attach a line
     .style("stroke", "black")  // colour the line
-    .attr("x1", 55)     // x position of the first end of the line
-    .attr("y1", yoffset + 67.5)      // y position of the first end of the line
-    .attr("x2", 55)     // x position of the second end of the line
-    .attr("y2", yoffset + 81);
+    .attr("x1", 105)     // x position of the first end of the line
+    .attr("y1", yoffset + 134)      // y position of the first end of the line
+    .attr("x2", 105)     // x position of the second end of the line
+    .attr("y2", yoffset + 162);
+    // horizontal lines
+    d3.select(svg)
+    .append("line")          // attach a line
+    .style("stroke", "black")  // colour the line
+    .attr("x1", 138)     // x position of the first end of the line
+    .attr("y1", yoffset + 105)      // y position of the first end of the line
+    .attr("x2", 165)     // x position of the second end of the line
+    .attr("y2", yoffset + 105);
    d3.select(svg)
     .append("line")          // attach a line
     .style("stroke", "black")  // colour the line
-    .attr("x1", 55)     // x position of the first end of the line
-    .attr("y1", yoffset + 67.5)      // y position of the first end of the line
-    .attr("x2", 55)     // x position of the second end of the line
-    .attr("y2", yoffset + 81);
+    .attr("x1", 44)     // x position of the first end of the line
+    .attr("y1", yoffset + 105)      // y position of the first end of the line
+    .attr("x2", 72)     // x position of the second end of the line
+    .attr("y2", yoffset + 105);
    for (square = 0; square < numberSquares; square++) {
     for (i = 0; i <= numberI; i++) {
       printValue(square, i, yoffset, stateAtom.board[square][i].toString().substring(0,2))  
