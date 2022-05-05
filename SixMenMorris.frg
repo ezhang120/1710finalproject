@@ -23,7 +23,7 @@ one sig Helper {
 }
 
 pred wellformed {
-    // each square has slots 0 to 4
+    // each square has slots 0 to 7
     all s: State | all square: Int | all i: Int {
         some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 1)
     }
@@ -38,7 +38,7 @@ fun oppositePlayer[p: Player]: Player {
 }
 
 pred starting[s: State] {
-    // 1 player has 3 tokens on the board, the other player has 4 to 9 tokens on the board.
+    // 1 player has 3 tokens on the board, the other player has 4 to 6 tokens on the board.
     (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 6))
     or
     (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 6))
@@ -112,9 +112,9 @@ pred slide[pre: State, p: Player, post: State] {
             post.board[square1][i1] = p
 
             millPostNotPre[pre, p, post] => {
+
                 // remove a random piece from the opposite player
-                
-                some squareRem, iRem: Int | all square2, i2: Int | {
+                some squareRem: Helper.intsSquare | some iRem: Helper.intsI | all square2: Helper.intsSquare | all i2: Helper.intsI | {
                     // Constrain squareRem and iRem
                     pre.board[squareRem][iRem] = oppositePlayer[p]
 
@@ -167,6 +167,7 @@ pred flyingMove[pre: State, p: Player, post: State] {
             post.board[square1][i1] = p
 
             millPostNotPre[pre, p, post] => {
+
                 // remove a random piece from the opposite player
                 some squareRem: Helper.intsSquare | some iRem: Helper.intsI | all square2: Helper.intsSquare | all i2: Helper.intsI | {
                     // Constrain squareRem and iRem
@@ -183,7 +184,6 @@ pred flyingMove[pre: State, p: Player, post: State] {
             }
         }
     }
-
 }
 
 pred someValidMove[s: State, p: Player] {
@@ -233,8 +233,7 @@ pred tracesWithoutFlying {
             (some p: Player | slide[s, p, Trace.next[s]])
             or
             (doNothing[s, Trace.next[s]])
-        }
-        
+        }   
     }
 }
 
@@ -255,7 +254,9 @@ pred tracesWithFlying {
     }
 }
 
-inst opt2 {
+// Instance Optimizers
+
+inst opt2 { // Two States
     Trace = `Trace0
     State = `State0 + `State1
     Helper = `Helper0
@@ -269,7 +270,7 @@ inst opt2 {
     intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
 }
 
-inst opt3 {
+inst opt3 { // Three States
     Trace = `Trace0
     State = `State0 + `State1 + `State2
     Helper = `Helper0
@@ -284,7 +285,7 @@ inst opt3 {
     intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
 }
 
-inst opt4 {
+inst opt4 { // Four States
     Trace = `Trace0
     State = `State0 + `State1 + `State2 + `State3
     Helper = `Helper0
@@ -300,7 +301,7 @@ inst opt4 {
     intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
 }
 
-inst opt5 {
+inst opt5 { // Five States
     Trace = `Trace0
     State = `State0 + `State1 + `State2 + `State3 + `State4
     Helper = `Helper0
@@ -317,14 +318,22 @@ inst opt5 {
     intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
 }
 
+// Generate Traces Without Flying
 // run {
 //     wellformed
 //     tracesWithoutFlying
 // } for exactly 5 Int, exactly 4 State for opt4
 
+// Generate Traces With Flying
 run {
     wellformed
-    tracesWithoutFlying
-    some s: State | gameOverPlayer[s, P1]
-    (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] >= 4 and countPiecesPlayer[Trace.initial_state, P1] <= 6))
-} for exactly 5 Int, exactly 5 State for opt5
+    tracesWithFlying
+} for exactly 5 Int, exactly 4 State for opt4
+
+// Generate Traces Without Flying Where Player with 3 Pieces Wins
+// run {
+//     wellformed
+//     tracesWithoutFlying
+//     some s: State | gameOverPlayer[s, P1]
+//     (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] >= 4 and countPiecesPlayer[Trace.initial_state, P1] <= 6))
+// } for exactly 5 Int, exactly 5 State for opt5

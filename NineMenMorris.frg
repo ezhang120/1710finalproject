@@ -16,6 +16,12 @@ one sig Trace {
     next: pfunc State -> State
 }
 
+// Optimization Helper
+one sig Helper {
+    intsSquare: set Int,
+    intsI: set Int
+}
+
 pred wellformed {
     // each square has slots 0 to 7
     all s: State | all square: Int | all i: Int {
@@ -24,7 +30,11 @@ pred wellformed {
 }
 
 fun countPiecesPlayer[s: State, p: Player]: Int {
-    add[add[#{i: Int | s.board[0][i] = p}, #{i: Int | s.board[1][i] = p}], #{i: Int | s.board[2][i] = p}]
+    add[add[#{i: Helper.intsI | s.board[0][i] = p}, #{i: Helper.intsI | s.board[1][i] = p}], #{i: Helper.intsI | s.board[2][i] = p}]
+}
+
+fun oppositePlayer[p: Player]: Player {
+    Player - p
 }
 
 pred starting[s: State] {
@@ -45,7 +55,7 @@ pred P2Turn[s: State] {
 pred millPostNotPre[pre: State, p: Player, post: State] {
     // if mill in post that is not in pre
 
-    // outer square
+    // inner square
     {{post.board[0][0] = p and post.board[0][1] = p and post.board[0][2] = p} and {pre.board[0][0] != p or pre.board[0][1] != p or pre.board[0][2] != p}} or
     {{post.board[0][2] = p and post.board[0][3] = p and post.board[0][4] = p} and {pre.board[0][2] != p or pre.board[0][3] != p or pre.board[0][4] != p}} or
     {{post.board[0][4] = p and post.board[0][5] = p and post.board[0][6] = p} and {pre.board[0][4] != p or pre.board[0][5] != p or pre.board[0][6] != p}} or
@@ -57,7 +67,7 @@ pred millPostNotPre[pre: State, p: Player, post: State] {
     {{post.board[1][4] = p and post.board[1][5] = p and post.board[1][6] = p} and {pre.board[1][4] != p or pre.board[1][5] != p or pre.board[1][6] != p}} or
     {{post.board[1][6] = p and post.board[1][7] = p and post.board[1][0] = p} and {pre.board[1][6] != p or pre.board[1][7] != p or pre.board[1][0] != p}} or
 
-    // inner square
+    // outer square
     {{post.board[2][0] = p and post.board[2][1] = p and post.board[2][2] = p} and {pre.board[2][0] != p or pre.board[2][1] != p or pre.board[2][2] != p}} or
     {{post.board[2][2] = p and post.board[2][3] = p and post.board[2][4] = p} and {pre.board[2][2] != p or pre.board[2][3] != p or pre.board[2][4] != p}} or
     {{post.board[2][4] = p and post.board[2][5] = p and post.board[2][6] = p} and {pre.board[2][4] != p or pre.board[2][5] != p or pre.board[2][6] != p}} or
@@ -79,14 +89,14 @@ pred slide[pre: State, p: Player, post: State] {
     // Action
     pre.turn != post.turn -- change turn to next player
 
-    some square, i: Int | {
+    some square: Helper.intsSquare | some i: Helper.intsI | {
         // Constrain square and i
         pre.board[square][i] = p
 
         // remove as moving
         no post.board[square][i]
 
-        some square1, i1: Int | {
+        some square1: Helper.intsSquare | some i1: Helper.intsI | {
             // ints are different so piece moves, only one should differ though, XOR!
             ((square != square1) or (i != i1)) and ((square = square1) or (i = i1))
 
@@ -100,7 +110,7 @@ pred slide[pre: State, p: Player, post: State] {
             {
                 // i is odd means that square can change; square1 will be 1 off from square and i won't change
                 // i is odd comes after because of implies logic
-                {{(square1 = add[square, 1] or square1 = subtract[square, 1]) and i = i1} implies remainder[i, 2] = 1}
+                {{(square1 = add[square, 1] or square1 = subtract[square, 1]) and i = i1} and remainder[i, 2] = 1}
                 or 
                 // if square doesn't move, then i can move: technically i can always move...
                 // i must (i+1)%8 or (i-1)%8 and square won't change
@@ -114,29 +124,27 @@ pred slide[pre: State, p: Player, post: State] {
             post.board[square1][i1] = p
 
             millPostNotPre[pre, p, post] => {
+
                 // remove a random piece from the opposite player
-                some squareRem, iRem: Int | all square2, i2: Int | {
+                some squareRem: Helper.intsSquare | some iRem: Helper.intsI | all square2: Helper.intsSquare | all i2: Helper.intsI | {
                     // Constrain squareRem and iRem
-                    pre.board[squareRem][iRem] = P1 iff p = P2
-                    pre.board[squareRem][iRem] = P2 iff p = P1
+                    pre.board[squareRem][iRem] = oppositePlayer[p]
 
                     no post.board[squareRem][iRem]
 
                     // Frame Condition
-                    (square2 != square and square2 != square1 and square2 != squareRem and i2 != i and i2 != i1 and i2 != iRem) => pre.board[square2][i2] = post.board[square2][i2]
+                    post.board = pre.board - square->i->p + square1->i1->p - squareRem->iRem->oppositePlayer[p]
                  }
             } else {
                 // Frame Condition
-                all square2, i2: Int | {
-                    (square2 != square and square2 != square1 and i2 != i and i2 != i1) implies pre.board[square2][i2] = post.board[square2][i2]
-                }
+                post.board = pre.board - square->i->p + square1->i1->p
             }
         }
     }
 }
 
 pred flyingMove[pre: State, p: Player, post: State] {
-      // Guard
+    // Guard
     not gameOver[pre]
     p = P1 implies P1Turn[pre]
     p = P2 implies P2Turn[pre]
@@ -147,14 +155,14 @@ pred flyingMove[pre: State, p: Player, post: State] {
     // Action
     pre.turn != post.turn -- change turn to next player
 
-    some square, i: Int | {
+    some square: Helper.intsSquare | some i: Helper.intsI | {
         // Constrain square and i
         pre.board[square][i] = p
 
         // TODO: not sure if this is correct
         no post.board[square][i]
 
-        some square1, i1: Int | {
+        some square1: Helper.intsSquare | some i1: Helper.intsI | {
             // ints are different so piece moves
             (square != square1) or (i != i1)
 
@@ -171,26 +179,40 @@ pred flyingMove[pre: State, p: Player, post: State] {
             post.board[square1][i1] = p
 
             millPostNotPre[pre, p, post] => {
+
                 // remove a random piece from the opposite player
-                some squareRem, iRem: Int | all square2, i2: Int | {
+                some squareRem: Helper.intsSquare | some iRem: Helper.intsI | all square2: Helper.intsSquare | all i2: Helper.intsI | {
                     // Constrain squareRem and iRem
-                    pre.board[squareRem][iRem] = P1 iff p = P2
-                    pre.board[squareRem][iRem] = P2 iff p = P1
+                    pre.board[squareRem][iRem] = oppositePlayer[p]
 
                     no post.board[squareRem][iRem]
 
                     // Frame Condition
-                    (square2 != square and square2 != square1 and square2 != squareRem and i2 != i and i2 != i1 and i2 != iRem) => pre.board[square2][i2] = post.board[square2][i2]
+                    post.board = pre.board - square->i->p + square1->i1->p - squareRem->iRem->oppositePlayer[p]
                  }
             } else {
                 // Frame Condition
-                all square2, i2: Int | {
-                    (square2 != square and square2 != square1 and i2 != i and i2 != i1) implies pre.board[square2][i2] = post.board[square2][i2]
-                }
+                post.board = pre.board - square->i->p + square1->i1->p
             }
         }
     }
+}
 
+pred someValidMove[s: State, p: Player] {
+    some square: Helper.intsSquare | some i: Helper.intsI | { // pieces player has
+        s.board[square][i] = p
+        (remainder[i, 2] = 1) => {
+            no s.board[square][remainder[add[i, 1], 8]] or
+            no s.board[square][remainder[subtract[i, 1], 8]] or
+            (square = 0 and no s.board[1][i]) or
+            (square = 1 and no s.board[0][i]) or
+            (square = 1 and no s.board[2][i]) or
+            (square = 2 and no s.board[1][i])
+        } else {
+            no s.board[square][remainder[add[i, 1], 8]] or
+            no s.board[square][remainder[subtract[i, 1], 8]]
+        }
+    }
 }
 
 pred loser[s: State, p: Player] {
@@ -198,8 +220,11 @@ pred loser[s: State, p: Player] {
 }
 
 pred gameOver[s: State] {
-    some p: Player | loser[s, p]
-    // TODO or no legal moves, isnt that basically move pred not work?
+    (some p: Player | loser[s, p] or not someValidMove[s, p])
+}
+
+pred gameOverPlayer[s: State, p: Player] {
+    loser[s, p] or not someValidMove[s, p]
 }
 
 pred doNothing[pre: State, post: State] {
@@ -223,7 +248,6 @@ pred tracesWithoutFlying {
             or
             (doNothing[s, Trace.next[s]])
         }
-        
     }
 }
 
@@ -243,13 +267,87 @@ pred tracesWithFlying {
         
     }
 }
-option verbose 2
+
+// Instance Optimizers
+
+inst opt2 { // Two States
+    Trace = `Trace0
+    State = `State0 + `State1
+    Helper = `Helper0
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1
+    intsSquare = `Helper0->{0 + 1 + 2}
+    intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
+}
+
+inst opt3 { // Three States
+    Trace = `Trace0
+    State = `State0 + `State1 + `State2
+    Helper = `Helper0
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1 + 
+           `Trace0->`State1->`State2
+    intsSquare = `Helper0->{0 + 1 + 2}
+    intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
+}
+
+inst opt4 { // Four States
+    Trace = `Trace0
+    State = `State0 + `State1 + `State2 + `State3
+    Helper = `Helper0
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1 +
+           `Trace0->`State1->`State2 + 
+           `Trace0->`State2->`State3 
+    intsSquare = `Helper0->{0 + 1 + 2}
+    intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
+}
+
+inst opt5 { // Five States
+    Trace = `Trace0
+    State = `State0 + `State1 + `State2 + `State3 + `State4
+    Helper = `Helper0
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1 +
+           `Trace0->`State1->`State2 + 
+           `Trace0->`State2->`State3 +
+           `Trace0->`State3->`State4 
+    intsSquare = `Helper0->{0 + 1 + 2}
+    intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
+}
+
+// Generate Traces Without Flying
+// run {
+//     wellformed
+//     tracesWithoutFlying
+// } for exactly 5 Int, exactly 4 State for opt4
+
+// Generate Traces With Flying
 run {
     wellformed
-    tracesWithoutFlying
-} for exactly 4 Int, exactly 1 State // 5 Int I think because we use an 8?
+    tracesWithFlying
+} for exactly 5 Int, exactly 4 State for opt4
 
-// remove in the same state as making the mill, makes the finding of new mills soooooooo much easier.
-// ensure that when the opppent player is removing a piece that the piece that they are removing is not in a mill // are we implementing this?
-    //unless that is the only option left i.e no pieces outside the mill
-
+// Generate Traces Without Flying Where Player with 3 Pieces Wins
+// run {
+//     wellformed
+//     tracesWithoutFlying
+//     some s: State | gameOverPlayer[s, P1]
+//     (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] >= 4 and countPiecesPlayer[Trace.initial_state, P1] <= 9))
+// } for exactly 5 Int, exactly 5 State for opt5
