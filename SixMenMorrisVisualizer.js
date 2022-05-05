@@ -9,6 +9,47 @@ const numberSquares = 2
 const numberI = 7
 const fontSize = "7px"
 
+// 300x300
+// currently 100x100, 3 columns and 3 rows
+// print from 25, 25, 50, 25, 75, 25 (top row of outer square)
+// inner square: 37.5, 37.5, 37.5, 50, 37.5, 62.5
+
+// function convertRowColToCoordinates(square, i, yoffset) {
+//     if (square == 0 && i == 0) {
+//         return [37.5, yoffset + 37.5]
+//     } else if (square == 0 && i == 1) {
+//         return [50, yoffset + 37.5]
+//     } else if (square == 0 && i == 2) {
+//         return [65.5, yoffset + 37.5]
+//     } else if (square == 0 && i == 3) {
+//         return [65.5, yoffset + 50]
+//     } else if (square == 0 && i == 4) {
+//         return [65.5, yoffset + 69.5]
+//     } else if (square == 0 && i == 5) {
+//         return [50, yoffset + 69.5]
+//     } else if (square == 0 && i == 6) {
+//         return [37.5, yoffset + 69.5]
+//     } else if (square == 0 && i == 7) {
+//         return [37.5, yoffset + 50]
+//     } else if (square == 1 && i == 0) {
+//         return [22, yoffset + 25]
+//     } else if (square == 1 && i == 1) {
+//         return [50, yoffset + 25]
+//     } else if (square == 1 && i == 2) {
+//         return [79, yoffset + 25]
+//     } else if (square == 1 && i == 3) {
+//         return [79, yoffset + 50]
+//     } else if (square == 1 && i == 4) {
+//         return [79, yoffset + 75]
+//     } else if (square == 1 && i == 5) {
+//         return [50, yoffset + 75]
+//     } else if (square == 1 && i == 6) {
+//         return [22, yoffset + 75]
+//     } else if (square == 1 && i == 7) {
+//         return [22, yoffset + 50]
+//     }
+// }
+
 function convertRowColToCoordinates(square, i, yoffset) {
     if (square == 0 && i == 0) {
         return [65, yoffset + 70]
@@ -154,4 +195,3 @@ for(b = 0; b < traceLength; b++) {
     printState(State.atom("State"+b), offsetEachState)  
   offsetEachState = offsetEachState + offsetEachStateAddy
 }
-Write to Murdederers
