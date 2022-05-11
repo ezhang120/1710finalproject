@@ -4,14 +4,6 @@
 abstract sig Player {}
 one sig P1, P2 extends Player {}
 
-// mills
-sig Mills {
-    slot1: pfunc Int -> Int,
-    slot2: pfunc Int -> Int,
-    slot3: pfunc Int -> Int,
-    player: one Player
-}
-
 // Board
 sig State {
     board: pfunc Int -> Int -> Player, // first int is the square we are on. 2 = outer, 1 = middle, 0 = inner
@@ -31,7 +23,6 @@ one sig Helper {
 }
 
 pred wellformed {
-    all m: Mills | some m.slot1 and some m.slot2 and some m.slot3
     // each square has slots 0 to 7
     all s: State | all square: Int | all i: Int {
         some s.board[square][i] => (i >= 0 and i <= 7 and square >= 0 and square <= 2)
@@ -47,36 +38,10 @@ fun oppositePlayer[p: Player]: Player {
 }
 
 pred starting[s: State] {
-    // existing mills on the board
-    all m: s.mills | some square: {i: Int | i >= 0 and i <= 2} | {
-        {s.board[square][m.slot1[square]] = m.player} 
-        and {s.board[square][m.slot2[square]] = m.player} 
-        and {s.board[square][m.slot3[square]] = m.player}
-    }
-    // all mills must be valid
-    all m: s.mills | validMillDiffSquare[m] or validMillSameSquare[m]
     // 1 player has 3 tokens on the board, the other player has 4 to 9 tokens on the board.
     (countPiecesPlayer[s, P1] = 3 and (countPiecesPlayer[s, P2] >= 4 and countPiecesPlayer[s, P2] <= 9))
     or
     (countPiecesPlayer[s, P2] = 3 and (countPiecesPlayer[s, P1] >= 4 and countPiecesPlayer[s, P1] <= 9))
-}
-
-// any mill must be a valid mill (same square)
-pred validMillDiffSquare[m: Mills] {
-    {m.slot1 = 0 -> 1 and m.slot2 = 1 -> 1 and m.slot1 = 2 -> 1} or
-    {m.slot1 = 0 -> 3 and m.slot2 = 1 -> 3 and m.slot1 = 2 -> 3} or
-    {m.slot1 = 0 -> 5 and m.slot2 = 1 -> 5 and m.slot1 = 2 -> 5} or
-    {m.slot1 = 0 -> 7 and m.slot2 = 1 -> 7 and m.slot1 = 2 -> 7} 
-}
-
-// any mill must be a valid mill (same square)
-pred validMillSameSquare[m: Mills] {
-    all square: {0, 1, 2} | all {
-        {m.slot1 = square -> 0 and m.slot2 = square -> 1 and m.slot1 = square -> 2} or
-        {m.slot1 = square -> 2 and m.slot2 = square -> 3 and m.slot1 = square -> 4} or
-        {m.slot1 = square -> 4 and m.slot2 = square -> 5 and m.slot1 = square -> 6} or
-        {m.slot1 = square -> 6 and m.slot2 = square -> 7 and m.slot1 = square -> 0}
-    }
 }
 
 pred P1Turn[s: State] {
@@ -367,6 +332,24 @@ inst opt5 { // Five States
     intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
 }
 
+inst opt6 { // Six States
+    Trace = `Trace0
+    State = `State0 + `State1 + `State2 + `State3 + `State4 + `State5 
+    Helper = `Helper0
+    P1 = `P10
+    P2 = `P20
+    Player = P1 + P2
+    board in State -> (0 + 1 + 2)->(0 + 1 + 2 + 3 + 4 + 5 + 6 + 7)->(P1 + P2)
+    initial_state = `Trace0->`State0
+    next = `Trace0->`State0->`State1 +
+           `Trace0->`State1->`State2 + 
+           `Trace0->`State2->`State3 +
+           `Trace0->`State3->`State4 +
+           `Trace0->`State4->`State5 
+    intsSquare = `Helper0->{0 + 1 + 2}
+    intsI = `Helper0->{0 + 1 + 2 + 3 + 4 + 5 + 6 + 7}
+}
+
 // Generate Traces Without Flying
 // run {
 //     wellformed
@@ -374,10 +357,10 @@ inst opt5 { // Five States
 // } for exactly 5 Int, exactly 4 State for opt4
 
 // Generate Traces With Flying
-run {
-    wellformed
-    tracesWithFlying
-} for exactly 5 Int, exactly 4 State for opt4
+// run {
+//     wellformed
+//     tracesWithFlying
+// } for exactly 5 Int, exactly 4 State for opt4
 
 // Generate Traces Without Flying Where Player with 3 Pieces Wins
 // run {
@@ -385,4 +368,11 @@ run {
 //     tracesWithoutFlying
 //     some s: State | gameOverPlayer[s, P1]
 //     (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] >= 4 and countPiecesPlayer[Trace.initial_state, P1] <= 9))
-// } for exactly 5 Int, exactly 5 State for opt5
+// } for exactly 5 Int, exactly 6 State for opt6
+
+run {
+    wellformed
+    tracesWithoutFlying
+    some s: State | gameOverPlayer[s, P1]
+    (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] = 4))
+} for exactly 5 Int, exactly 6 State for opt6

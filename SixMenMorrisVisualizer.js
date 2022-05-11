@@ -1,7 +1,8 @@
 const d3 = require('d3')
 d3.selectAll("svg > *").remove();
 
-const traceLength = 2
+const startState = 0
+const traceLength = 6
 const offsetEachStateAddy = 205
 const offsetEachStateAddx = 5
 const stateSize = 200
@@ -149,7 +150,7 @@ function printState(stateAtom, yoffset) {
 }
 
 var offsetEachState = 0
-for(b = 0; b < traceLength; b++) {  
+for(b = startState; b < traceLength; b++) {  
   if(State.atom("State"+b) != null)
     printState(State.atom("State"+b), offsetEachState)  
   offsetEachState = offsetEachState + offsetEachStateAddy
