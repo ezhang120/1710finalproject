@@ -2,6 +2,7 @@
 
 ## Introduction:
     For our final project we have chosen to model a game called Nine Men's Morris. The game has three phases. In the first phase, the players put down a single token on the board in alternating turns. In the second phase, players can only make moves by sliding pieces to adjacent slots ont he board. In the third phase of the game, one player is left with only 3 pieces and is allowed to employ a flying move. The goal of this project is to figure out whether or not the flying move is necessary for the player with 3 pieces left to win. Hence, we will only be modelling the game from the third phase onwards. Here is a link to a Wikipedia pages for more rules of the game. (https://en.wikipedia.org/wiki/Nine_men%27s_morris)
+    - Please only look at the NineMenMorris.frg and NineMenMorrisVisualizer.js. The Six Men Morris was for testing out the runtime when it used to take very long.
 
 ## Our Goals
     - Our target goal is to figure out whether or not the flying move was necessary for the player left with 3 pieces to win.
