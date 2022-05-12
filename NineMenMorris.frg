@@ -370,6 +370,7 @@ inst opt6 { // Six States
 //     (countPiecesPlayer[Trace.initial_state, P2] = 3 and (countPiecesPlayer[Trace.initial_state, P1] >= 4 and countPiecesPlayer[Trace.initial_state, P1] <= 9))
 // } for exactly 5 Int, exactly 6 State for opt6
 
+// Generate Traces Without Flying Where Player with 3 Pieces Wins, and other player starts with only 4 pieces
 run {
     wellformed
     tracesWithoutFlying
